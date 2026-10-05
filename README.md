@@ -27,7 +27,7 @@ For the synchronous client: `cargo add aveecare --features blocking`.
 Create an API key in AveeCare, then:
 
 ```rust,no_run
-use aveecare::{AveeCare, PatientListParams, PatientStatus};
+use aveecare::{AveeCare, PatientLifecycleStage, PatientListParams};
 
 #[tokio::main]
 async fn main() -> Result<(), aveecare::Error> {
@@ -35,10 +35,10 @@ async fn main() -> Result<(), aveecare::Error> {
 
     let page = avee
         .patients()
-        .list(PatientListParams::new().status(PatientStatus::Active).limit(25))
+        .list(PatientListParams::new().lifecycle_stage(PatientLifecycleStage::Client).limit(25))
         .await?;
     for patient in page.data {
-        println!("{} {} {}", patient.id, patient.first_name, patient.last_name);
+        println!("{} {} {}", patient.id, patient.first_name.unwrap_or_default(), patient.last_name.unwrap_or_default());
     }
     Ok(())
 }
@@ -65,7 +65,7 @@ async fn example(avee: &AveeCare) -> Result<(), aveecare::Error> {
     let created = avee.patients().create(PatientCreate::new("Margaret", "Alvarez")).await?;
     let updated = avee
         .patients()
-        .update(&created.id, PatientUpdate::new().phone("+16025550142").clear_email())
+        .update(&created.id, PatientUpdate::new().scheduling_notes("Prefers morning visits").clear_email())
         .await?;
     avee.patients().delete(&created.id).await?;
 

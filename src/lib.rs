@@ -1,16 +1,16 @@
 //! Official Rust library for the [AveeCare API](https://www.aveecare.com/docs/api).
 //!
 //! ```no_run
-//! use aveecare::{AveeCare, PatientListParams, PatientStatus};
+//! use aveecare::{AveeCare, PatientLifecycleStage, PatientListParams};
 //!
 //! # async fn run() -> Result<(), aveecare::Error> {
 //! let avee = AveeCare::new(std::env::var("AVEECARE_API_KEY").unwrap());
 //! let page = avee
 //!     .patients()
-//!     .list(PatientListParams::new().status(PatientStatus::Active).limit(25))
+//!     .list(PatientListParams::new().lifecycle_stage(PatientLifecycleStage::Client).limit(25))
 //!     .await?;
 //! for patient in page.data {
-//!     println!("{} {}", patient.first_name, patient.last_name);
+//!     println!("{} {}", patient.first_name.unwrap_or_default(), patient.last_name.unwrap_or_default());
 //! }
 //! # Ok(()) }
 //! ```

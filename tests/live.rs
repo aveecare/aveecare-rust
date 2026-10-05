@@ -87,7 +87,7 @@ async fn live_create_idempotent_update_delete() {
         .update(&created.id, PatientUpdate::new().first_name("Sdk2"))
         .await;
     avee.patients().delete(&created.id).await.unwrap();
-    assert_eq!(updated.unwrap().first_name, "Sdk2");
+    assert_eq!(updated.unwrap().first_name.as_deref(), Some("Sdk2"));
     assert!(matches!(
         avee.patients().retrieve(&created.id).await,
         Err(Error::NotFound(_))

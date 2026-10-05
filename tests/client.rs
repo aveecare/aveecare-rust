@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use aveecare::futures_util::{pin_mut, StreamExt};
 use aveecare::{
-    AveeCare, Error, PatientAddress, PatientCreate, PatientListParams, PatientStatus,
-    PatientUpdate, RequestOptions, VisitListParams,
+    AveeCare, Error, PatientCreate, PatientLifecycleStage, PatientListParams, PatientUpdate,
+    RequestOptions, VisitListParams,
 };
 use serde_json::{json, Value};
 use wiremock::matchers::{header, header_exists, method, path, query_param};
@@ -15,8 +15,9 @@ fn patient(id: &str) -> Value {
         "id": id,
         "firstName": "Margaret",
         "lastName": "Alvarez",
-        "status": "active",
-        "address": {"line1": "1 Main St", "line2": null, "city": "Phoenix", "state": "AZ", "postalCode": "85015"},
+        "status": "Active",
+        "lifecycleStage": "Client",
+        "address": "1 Main St", "city": "Phoenix", "state": "AZ", "zipCode": "85015",
         "createdAt": "2026-09-12T16:04:11Z",
         "updatedAt": "2026-09-30T09:12:45Z",
         "someFutureField": 1
@@ -46,14 +47,14 @@ async fn sends_auth_and_user_agent() {
             concat!("aveecare-rust/", env!("CARGO_PKG_VERSION")),
         ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "object": "me", "id": "key_1", "name": "k", "scopes": ["read", "write", "admin"],
+            "object": "me", "id": "key_1", "name": "k", "scopes": ["read", "write", "admin"], "role": "User", "email": "avery@sunrisehomecare.example", "expiresAt": "2027-10-05T00:00:00.000Z",
             "organization": {"id": "o", "name": "Sunrise"}
         })))
         .expect(1)
         .mount(&server)
         .await;
     let me = client(&server).me().retrieve().await.unwrap();
-    assert_eq!(me.organization.name, "Sunrise");
+    assert_eq!(me.organization.name.as_deref(), Some("Sunrise"));
     // Unknown enum values decode to the catch-all instead of failing.
     assert_eq!(me.scopes.len(), 3);
     assert_eq!(me.scopes[2], aveecare::MeScope::Unknown);
@@ -66,7 +67,8 @@ async fn list_sends_wire_params_and_decodes_models() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/v1/patients"))
-        .and(query_param("status", "active"))
+        .and(query_param("status", "Active"))
+        .and(query_param("lifecycle_stage", "Client"))
         .and(query_param("updated_after", "2026-01-01T00:00:00Z"))
         .and(query_param("limit", "25"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -79,7 +81,8 @@ async fn list_sends_wire_params_and_decodes_models() {
         .patients()
         .list(
             PatientListParams::new()
-                .status(PatientStatus::Active)
+                .status("Active")
+                .lifecycle_stage(PatientLifecycleStage::Client)
                 .updated_after("2026-01-01T00:00:00Z")
                 .limit(25),
         )
@@ -87,10 +90,11 @@ async fn list_sends_wire_params_and_decodes_models() {
         .unwrap();
     assert!(!page.has_next_page());
     let p = &page.data[0];
-    assert_eq!(p.first_name, "Margaret");
-    assert_eq!(p.status, PatientStatus::Active);
-    assert_eq!(p.address.as_ref().unwrap().postal_code, "85015");
-    assert_eq!(p.address.as_ref().unwrap().line2, None);
+    assert_eq!(p.first_name.as_deref(), Some("Margaret"));
+    assert_eq!(p.status.as_deref(), Some("Active"));
+    assert_eq!(p.lifecycle_stage, Some(PatientLifecycleStage::Client));
+    assert_eq!(p.zip_code.as_deref(), Some("85015"));
+    assert_eq!(p.middle_name, None);
 }
 
 #[tokio::test]
@@ -184,7 +188,9 @@ async fn create_update_delete() {
         .patients()
         .create(
             PatientCreate::new("Margaret", "Alvarez")
-                .address(PatientAddress::new("1 Main St", "Phoenix", "AZ", "85015"))
+                .address("1 Main St")
+                .city("Phoenix")
+                .zip_code("85015")
                 .clear_email(),
         )
         .await
@@ -201,7 +207,7 @@ async fn create_update_delete() {
         .update(
             "pat_9",
             PatientUpdate::new()
-                .phone("+16025550142")
+                .scheduling_notes("Prefers morning visits")
                 .clear_date_of_birth(),
         )
         .await
@@ -215,7 +221,7 @@ async fn create_update_delete() {
         body,
         json!({
             "firstName": "Margaret", "lastName": "Alvarez", "email": null,
-            "address": {"line1": "1 Main St", "city": "Phoenix", "state": "AZ", "postalCode": "85015"}
+            "address": "1 Main St", "city": "Phoenix", "zipCode": "85015"
         })
     );
     let key = requests[0]
@@ -230,7 +236,10 @@ async fn create_update_delete() {
         "my-key-1"
     );
     let patch: Value = serde_json::from_slice(&requests[2].body).unwrap();
-    assert_eq!(patch, json!({"phone": "+16025550142", "dateOfBirth": null}));
+    assert_eq!(
+        patch,
+        json!({"schedulingNotes": "Prefers morning visits", "dateOfBirth": null})
+    );
     assert_eq!(requests[2].method.as_str(), "PATCH");
 }
 

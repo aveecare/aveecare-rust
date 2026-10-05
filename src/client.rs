@@ -70,7 +70,7 @@ struct Inner {
 /// # async fn run() -> Result<(), aveecare::Error> {
 /// let avee = aveecare::AveeCare::new(std::env::var("AVEECARE_API_KEY").unwrap());
 /// let me = avee.me().retrieve().await?;
-/// println!("{}", me.name);
+/// println!("{}", me.name.unwrap_or_default());
 /// # Ok(()) }
 /// ```
 #[derive(Clone)]
