@@ -48,13 +48,13 @@ async fn sends_auth_and_user_agent() {
         ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "object": "me", "id": "key_1", "name": "k", "scopes": ["read", "write", "admin"], "role": "User", "email": "avery@sunrisehomecare.example", "expiresAt": "2027-10-05T00:00:00.000Z",
-            "organization": {"id": "o", "name": "Sunrise"}
+            "organization": {"id": "o", "name": "Demo Agency"}
         })))
         .expect(1)
         .mount(&server)
         .await;
     let me = client(&server).me().retrieve().await.unwrap();
-    assert_eq!(me.organization.name.as_deref(), Some("Sunrise"));
+    assert_eq!(me.organization.name.as_deref(), Some("Demo Agency"));
     // Unknown enum values decode to the catch-all instead of failing.
     assert_eq!(me.scopes.len(), 3);
     assert_eq!(me.scopes[2], aveecare::MeScope::Unknown);
