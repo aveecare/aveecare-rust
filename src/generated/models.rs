@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Whether this person is a prospective client or an admitted client. `null` means client.
+/// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum PatientLifecycleStage {
@@ -149,7 +150,8 @@ impl std::fmt::Display for PatientPaymentMethodPreference {
 
 /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
 /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect` even
-/// if you send `Active`.
+/// if you send `Active`. Creating a patient with `Prospect` makes them a prospective client.
+/// Defaults to `Active`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum PatientCreateStatus {
@@ -1448,16 +1450,19 @@ pub struct Patient {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     /// Whether the patient is an active client. Only active clients are scheduled and billed. A
-    /// prospective client is always inactive.
+    /// prospective client is always inactive. If you leave it out on create, it is `false` for a
+    /// prospect or an `Inactive` or `Discharged` status and `true` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active: Option<bool>,
     /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
     /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect`
-    /// even if you send `Active`. Usually one of `Active`, `Inactive`, `Prospect`, `Discharged`;
+    /// even if you send `Active`. Creating a patient with `Prospect` makes them a prospective
+    /// client. Defaults to `Active`. Usually one of `Active`, `Inactive`, `Prospect`, `Discharged`;
     /// records imported from another system can hold other values.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
     /// Whether this person is a prospective client or an admitted client. `null` means client.
+    /// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
     #[serde(
         rename = "lifecycleStage",
         default,
@@ -1638,15 +1643,18 @@ pub struct PatientCreate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<Option<String>>,
     /// Whether the patient is an active client. Only active clients are scheduled and billed. A
-    /// prospective client is always inactive.
+    /// prospective client is always inactive. If you leave it out on create, it is `false` for a
+    /// prospect or an `Inactive` or `Discharged` status and `true` otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<Option<bool>>,
     /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
     /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect`
-    /// even if you send `Active`.
+    /// even if you send `Active`. Creating a patient with `Prospect` makes them a prospective
+    /// client. Defaults to `Active`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Option<PatientCreateStatus>>,
     /// Whether this person is a prospective client or an admitted client. `null` means client.
+    /// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
     #[serde(rename = "lifecycleStage", skip_serializing_if = "Option::is_none")]
     pub lifecycle_stage: Option<Option<PatientLifecycleStage>>,
     /// The main type of service the patient receives.
@@ -1850,7 +1858,8 @@ impl PatientCreate {
     }
 
     /// Whether the patient is an active client. Only active clients are scheduled and billed. A
-    /// prospective client is always inactive.
+    /// prospective client is always inactive. If you leave it out on create, it is `false` for a
+    /// prospect or an `Inactive` or `Discharged` status and `true` otherwise.
     pub fn active(mut self, value: bool) -> Self {
         self.active = Some(Some(value));
         self
@@ -1864,7 +1873,8 @@ impl PatientCreate {
 
     /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
     /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect`
-    /// even if you send `Active`.
+    /// even if you send `Active`. Creating a patient with `Prospect` makes them a prospective
+    /// client. Defaults to `Active`.
     pub fn status(mut self, value: PatientCreateStatus) -> Self {
         self.status = Some(Some(value));
         self
@@ -1877,6 +1887,7 @@ impl PatientCreate {
     }
 
     /// Whether this person is a prospective client or an admitted client. `null` means client.
+    /// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
     pub fn lifecycle_stage(mut self, value: PatientLifecycleStage) -> Self {
         self.lifecycle_stage = Some(Some(value));
         self
@@ -2183,15 +2194,18 @@ pub struct PatientUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<Option<String>>,
     /// Whether the patient is an active client. Only active clients are scheduled and billed. A
-    /// prospective client is always inactive.
+    /// prospective client is always inactive. If you leave it out on create, it is `false` for a
+    /// prospect or an `Inactive` or `Discharged` status and `true` otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<Option<bool>>,
     /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
     /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect`
-    /// even if you send `Active`.
+    /// even if you send `Active`. Creating a patient with `Prospect` makes them a prospective
+    /// client. Defaults to `Active`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Option<PatientCreateStatus>>,
     /// Whether this person is a prospective client or an admitted client. `null` means client.
+    /// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
     #[serde(rename = "lifecycleStage", skip_serializing_if = "Option::is_none")]
     pub lifecycle_stage: Option<Option<PatientLifecycleStage>>,
     /// The main type of service the patient receives.
@@ -2407,7 +2421,8 @@ impl PatientUpdate {
     }
 
     /// Whether the patient is an active client. Only active clients are scheduled and billed. A
-    /// prospective client is always inactive.
+    /// prospective client is always inactive. If you leave it out on create, it is `false` for a
+    /// prospect or an `Inactive` or `Discharged` status and `true` otherwise.
     pub fn active(mut self, value: bool) -> Self {
         self.active = Some(Some(value));
         self
@@ -2421,7 +2436,8 @@ impl PatientUpdate {
 
     /// The client's status as shown in AveeCare. `Inactive` and `Discharged` mean the person is no
     /// longer receiving care. A prospective client (`lifecycleStage: Prospect`) reads `Prospect`
-    /// even if you send `Active`.
+    /// even if you send `Active`. Creating a patient with `Prospect` makes them a prospective
+    /// client. Defaults to `Active`.
     pub fn status(mut self, value: PatientCreateStatus) -> Self {
         self.status = Some(Some(value));
         self
@@ -2434,6 +2450,7 @@ impl PatientUpdate {
     }
 
     /// Whether this person is a prospective client or an admitted client. `null` means client.
+    /// Prospects appear in the prospective-patient pool in AveeCare, not on the patient roster.
     pub fn lifecycle_stage(mut self, value: PatientLifecycleStage) -> Self {
         self.lifecycle_stage = Some(Some(value));
         self
@@ -4446,7 +4463,8 @@ pub struct Caregiver {
     /// Employment status.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<CaregiverStatus>,
-    /// Whether the caregiver can be scheduled.
+    /// Whether the caregiver can be scheduled. If you leave it out on create, it is `false` for an
+    /// `Inactive` status and `true` otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active: Option<bool>,
     /// Date of birth.
@@ -4559,7 +4577,8 @@ pub struct CaregiverCreate {
     /// Employment status.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Option<CaregiverStatus>>,
-    /// Whether the caregiver can be scheduled.
+    /// Whether the caregiver can be scheduled. If you leave it out on create, it is `false` for an
+    /// `Inactive` status and `true` otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<Option<bool>>,
     /// Date of birth.
@@ -4685,7 +4704,8 @@ impl CaregiverCreate {
         self
     }
 
-    /// Whether the caregiver can be scheduled.
+    /// Whether the caregiver can be scheduled. If you leave it out on create, it is `false` for an
+    /// `Inactive` status and `true` otherwise.
     pub fn active(mut self, value: bool) -> Self {
         self.active = Some(Some(value));
         self
@@ -4901,7 +4921,8 @@ pub struct CaregiverUpdate {
     /// Employment status.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Option<CaregiverStatus>>,
-    /// Whether the caregiver can be scheduled.
+    /// Whether the caregiver can be scheduled. If you leave it out on create, it is `false` for an
+    /// `Inactive` status and `true` otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<Option<bool>>,
     /// Date of birth.
@@ -5039,7 +5060,8 @@ impl CaregiverUpdate {
         self
     }
 
-    /// Whether the caregiver can be scheduled.
+    /// Whether the caregiver can be scheduled. If you leave it out on create, it is `false` for an
+    /// `Inactive` status and `true` otherwise.
     pub fn active(mut self, value: bool) -> Self {
         self.active = Some(Some(value));
         self
